@@ -9,7 +9,6 @@ const PORT = process.env.PORT || 8080;
 app.use(express.json());
 app.use(express.static('public'));
 
-// 1. Technical Checks (Robots & Sitemap)
 async function checkFile(url) {
     try {
         const resp = await axios.get(url, { timeout: 3000 });
@@ -17,7 +16,6 @@ async function checkFile(url) {
     } catch { return false; }
 }
 
-// 2. Broken Links Checker
 async function isLinkBroken(url) {
     try {
         const response = await axios.get(url, { 
@@ -27,6 +25,17 @@ async function isLinkBroken(url) {
         });
         return response.status !== 200;
     } catch { return true; }
+}
+
+// Logic bach n-7sbu keyword density
+function getKeywordDensity(text) {
+    const words = text.toLowerCase().match(/\b(\w{4,})\b/g); // Ghir l-kalimat li fihom +4 characters
+    if (!words) return [];
+    const freq = {};
+    words.forEach(w => freq[w] = (freq[w] || 0) + 1);
+    return Object.entries(freq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5); // Top 5 keywords
 }
 
 app.post('/api/audit', async (req, res) => {
@@ -42,22 +51,32 @@ app.post('/api/audit', async (req, res) => {
         const responseTime = Date.now() - startTime;
         const $ = cheerio.load(html);
         const domain = new URL(url).origin;
+        const bodyText = $('body').text();
 
         const results = {
             onPage: {
                 title: $('title').text() || "Missing",
                 desc: $('meta[name="description"]').attr('content') || "Missing",
                 h1Count: $('h1').length,
-                viewport: $('meta[name="viewport"]').length > 0, // Mobile friendly check
+                viewport: $('meta[name="viewport"]').length > 0,
+                canonical: $('link[rel="canonical"]').attr('href') || "Missing",
+                language: $('html').attr('lang') || "Not Defined"
             },
-            social: {
-                ogTitle: $('meta[property="og:title"]').length > 0,
-                ogImg: $('meta[property="og:image"]').length > 0
+            content: {
+                wordCount: bodyText.split(/\s+/).length,
+                topKeywords: getKeywordDensity(bodyText),
+                schemaMarkup: $('script[type="application/ld+json"]').length > 0
             },
             technical: {
                 responseTime: `${responseTime}ms`,
                 robotsTxt: await checkFile(`${domain}/robots.txt`),
-                sitemapXml: await checkFile(`${domain}/sitemap.xml`)
+                sitemapXml: await checkFile(`${domain}/sitemap.xml`),
+                h2Count: $('h2').length,
+                h3Count: $('h3').length
+            },
+            social: {
+                ogTitle: $('meta[property="og:title"]').length > 0,
+                ogImg: $('meta[property="og:image"]').length > 0
             },
             images: {
                 total: $('img').length,
@@ -66,9 +85,8 @@ app.post('/api/audit', async (req, res) => {
             brokenLinks: []
         };
 
-        // Broken Links Logic (Max 10 for performance)
         const links = [];
-        $('a[href^="http"]').each((i, el) => { if (i < 10) links.push($(el).attr('href')); });
+        $('a[href^="http"]').each((i, el) => { if (i < 8) links.push($(el).attr('href')); });
         const brokenResults = await Promise.all(links.map(async (link) => {
             return (await isLinkBroken(link)) ? link : null;
         }));
@@ -76,7 +94,7 @@ app.post('/api/audit', async (req, res) => {
 
         res.json(results);
     } catch (error) {
-        res.status(500).json({ error: "Site unreachable. Check your URL." });
+        res.status(500).json({ error: "Site unreachable." });
     }
 });
 
@@ -85,4 +103,3 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
-
