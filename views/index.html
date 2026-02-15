@@ -2,87 +2,98 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SEO Analyzer Pro</title>
+    <title>SEO Analyzer Ultimate</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #fdfdfd; font-family: 'Segoe UI', sans-serif; }
-        .hero { text-align: center; padding: 80px 20px; }
-        .search-wrapper { max-width: 650px; margin: 0 auto; position: relative; }
-        .search-input { border-radius: 30px; padding: 18px 30px; border: 1px solid #dfe1e5; box-shadow: 0 1px 6px rgba(32,33,36,0.28); font-size: 1.2rem; }
-        .btn-audit { border-radius: 20px; padding: 12px 35px; margin-top: 25px; font-weight: bold; background: #4285f4; border: none; }
-        .card-result { margin-top: 40px; border: none; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; text-align: left; }
-        .status-badge { font-size: 0.8rem; padding: 5px 12px; border-radius: 10px; }
+        body { background: #f4f7f6; font-family: 'Inter', sans-serif; padding-top: 50px; }
+        .search-card { background: white; border-radius: 15px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 30px; }
+        .audit-section { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; border-left: 5px solid #4285f4; }
+        .badge-pro { font-size: 0.9rem; padding: 6px 12px; }
+        .success-text { color: #28a745; font-weight: bold; }
+        .error-text { color: #dc3545; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container hero">
-    <h1 class="mb-4"><b>SEO Auditor Pro</b></h1>
-    <div class="search-wrapper">
-        <input type="text" id="targetUrl" class="form-control search-input" placeholder="Enter website URL (e.g. google.com)">
-        <button class="btn btn-primary btn-audit" id="runBtn" onclick="runAnalysis()">Quick Audit</button>
+<div class="container">
+    <div class="search-card text-center">
+        <h1 class="mb-4">🚀 SEO Audit Engine</h1>
+        <div class="d-flex gap-2 justify-content-center">
+            <input type="text" id="targetUrl" class="form-control w-50" placeholder="https://example.com">
+            <button class="btn btn-primary px-4" id="runBtn" onclick="runAnalysis()">Analyze Now</button>
+        </div>
+        <div id="loader" class="mt-4" style="display:none;">
+            <div class="spinner-grow text-primary" role="status"></div>
+            <p>Crawling website assets...</p>
+        </div>
     </div>
 
-    <div id="loader" class="mt-4" style="display:none;">
-        <div class="spinner-border text-primary"></div>
-        <p class="mt-2">Analyzing SEO & Checking Broken Links...</p>
-    </div>
-
-    <div id="results" class="card card-result p-4">
-        <h3 class="mb-4 text-primary">Audit Report</h3>
+    <div id="results" style="display:none;">
         <div class="row">
             <div class="col-md-6">
-                <p><b>Title:</b> <span id="rTitle"></span> (<span id="rTitleLen"></span> chars)</p>
-                <p><b>Meta Desc:</b> <span id="rDesc"></span></p>
-                <p><b>H1 Count:</b> <span id="rH1"></span></p>
+                <div class="audit-section">
+                    <h5>Content & Tags</h5>
+                    <hr>
+                    <p><b>Title:</b> <span id="rTitle"></span></p>
+                    <p><b>H1 Count:</b> <span id="rH1"></span></p>
+                    <p><b>Mobile Viewport:</b> <span id="rView"></span></p>
+                    <p><b>Images Missing Alt:</b> <span id="rAlt"></span></p>
+                </div>
             </div>
+
             <div class="col-md-6">
-                <p><b>Robots.txt:</b> <span id="rRobots"></span></p>
-                <p><b>Images without Alt:</b> <span id="rAlt" class="text-danger"></span></p>
+                <div class="audit-section" style="border-left-color: #34a853;">
+                    <h5>Technical Performance</h5>
+                    <hr>
+                    <p><b>Server Response:</b> <span id="rSpeed"></span></p>
+                    <p><b>Robots.txt:</b> <span id="rRobots"></span></p>
+                    <p><b>Sitemap.xml:</b> <span id="rSitemap"></span></p>
+                    <p><b>OG Social Tags:</b> <span id="rSocial"></span></p>
+                </div>
             </div>
         </div>
-        <hr>
-        <h5 class="text-danger">Broken Links Found:</h5>
-        <ul id="rBrokenList"></ul>
+
+        <div class="audit-section" style="border-left-color: #ea4335;">
+            <h5>Broken Links Analysis</h5>
+            <ul id="rBrokenList" class="mt-2"></ul>
+        </div>
     </div>
 </div>
 
 <script>
     async function runAnalysis() {
         const url = document.getElementById('targetUrl').value;
-        if(!url) return alert("Diri URL!");
+        if(!url) return alert("Please enter a URL");
 
         document.getElementById('loader').style.display = 'block';
         document.getElementById('results').style.display = 'none';
-        
+
         try {
             const res = await fetch('/api/audit', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ url })
             });
-            const data = await res.json();
+            const d = await res.json();
 
-            document.getElementById('rTitle').innerText = data.title;
-            document.getElementById('rTitleLen').innerText = data.titleLen;
-            document.getElementById('rDesc').innerText = data.desc;
-            document.getElementById('rH1').innerText = data.h1Count;
-            document.getElementById('rRobots').innerText = data.robotsTxt ? "✅ Found" : "❌ Missing";
-            document.getElementById('rAlt').innerText = data.images.missingAlt;
+            document.getElementById('rTitle').innerText = d.onPage.title;
+            document.getElementById('rH1').innerText = d.onPage.h1Count;
+            document.getElementById('rView').innerText = d.onPage.viewport ? "✅ Active" : "❌ Missing Viewport";
+            document.getElementById('rAlt').innerText = d.images.missingAlt;
+            
+            document.getElementById('rSpeed').innerText = d.technical.responseTime;
+            document.getElementById('rRobots').innerText = d.technical.robotsTxt ? "✅ Found" : "❌ Missing";
+            document.getElementById('rSitemap').innerText = d.technical.sitemapXml ? "✅ Found" : "❌ Missing";
+            document.getElementById('rSocial').innerText = d.social.ogTitle ? "✅ Found" : "❌ Missing OG Tags";
 
-            const list = document.getElementById('rBrokenList');
-            list.innerHTML = '';
-            if(data.brokenLinks.length > 0) {
-                data.brokenLinks.forEach(link => {
-                    list.innerHTML += `<li class="text-danger">${link}</li>`;
-                });
-            } else {
-                list.innerHTML = `<li class="text-success">No broken links found!</li>`;
-            }
+            const bl = document.getElementById('rBrokenList');
+            bl.innerHTML = d.brokenLinks.length > 0 
+                ? d.brokenLinks.map(l => `<li class="text-danger">${l}</li>`).join('')
+                : '<li class="text-success">Perfect! No broken links found in top pages.</li>';
 
             document.getElementById('results').style.display = 'block';
         } catch (e) {
-            alert("Error: URL unreachable.");
+            alert("Error analyzing the site.");
         } finally {
             document.getElementById('loader').style.display = 'none';
         }
