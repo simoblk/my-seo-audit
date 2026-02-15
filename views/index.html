@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SEO Analyzer Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #fdfdfd; font-family: 'Segoe UI', sans-serif; }
+        .hero { text-align: center; padding: 80px 20px; }
+        .search-wrapper { max-width: 650px; margin: 0 auto; position: relative; }
+        .search-input { border-radius: 30px; padding: 18px 30px; border: 1px solid #dfe1e5; box-shadow: 0 1px 6px rgba(32,33,36,0.28); font-size: 1.2rem; }
+        .btn-audit { border-radius: 20px; padding: 12px 35px; margin-top: 25px; font-weight: bold; background: #4285f4; border: none; }
+        .card-result { margin-top: 40px; border: none; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; text-align: left; }
+        .status-badge { font-size: 0.8rem; padding: 5px 12px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container hero">
+    <h1 class="mb-4"><b>SEO Auditor Pro</b></h1>
+    <div class="search-wrapper">
+        <input type="text" id="targetUrl" class="form-control search-input" placeholder="Enter website URL (e.g. google.com)">
+        <button class="btn btn-primary btn-audit" id="runBtn" onclick="runAnalysis()">Quick Audit</button>
+    </div>
+
+    <div id="loader" class="mt-4" style="display:none;">
+        <div class="spinner-border text-primary"></div>
+        <p class="mt-2">Analyzing SEO & Checking Broken Links...</p>
+    </div>
+
+    <div id="results" class="card card-result p-4">
+        <h3 class="mb-4 text-primary">Audit Report</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <p><b>Title:</b> <span id="rTitle"></span> (<span id="rTitleLen"></span> chars)</p>
+                <p><b>Meta Desc:</b> <span id="rDesc"></span></p>
+                <p><b>H1 Count:</b> <span id="rH1"></span></p>
+            </div>
+            <div class="col-md-6">
+                <p><b>Robots.txt:</b> <span id="rRobots"></span></p>
+                <p><b>Images without Alt:</b> <span id="rAlt" class="text-danger"></span></p>
+            </div>
+        </div>
+        <hr>
+        <h5 class="text-danger">Broken Links Found:</h5>
+        <ul id="rBrokenList"></ul>
+    </div>
+</div>
+
+<script>
+    async function runAnalysis() {
+        const url = document.getElementById('targetUrl').value;
+        if(!url) return alert("Diri URL!");
+
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+        
+        try {
+            const res = await fetch('/api/audit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ url })
+            });
+            const data = await res.json();
+
+            document.getElementById('rTitle').innerText = data.title;
+            document.getElementById('rTitleLen').innerText = data.titleLen;
+            document.getElementById('rDesc').innerText = data.desc;
+            document.getElementById('rH1').innerText = data.h1Count;
+            document.getElementById('rRobots').innerText = data.robotsTxt ? "✅ Found" : "❌ Missing";
+            document.getElementById('rAlt').innerText = data.images.missingAlt;
+
+            const list = document.getElementById('rBrokenList');
+            list.innerHTML = '';
+            if(data.brokenLinks.length > 0) {
+                data.brokenLinks.forEach(link => {
+                    list.innerHTML += `<li class="text-danger">${link}</li>`;
+                });
+            } else {
+                list.innerHTML = `<li class="text-success">No broken links found!</li>`;
+            }
+
+            document.getElementById('results').style.display = 'block';
+        } catch (e) {
+            alert("Error: URL unreachable.");
+        } finally {
+            document.getElementById('loader').style.display = 'none';
+        }
+    }
+</script>
+</body>
+</html>

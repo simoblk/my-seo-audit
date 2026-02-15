@@ -1,0 +1,15 @@
+{
+  "name": "seo-pro-audit",
+  "version": "1.0.0",
+  "description": "Professional SEO Audit Tool",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "axios": "^1.7.0",
+    "cheerio": "^1.0.0",
+    "chalk": "^4.1.2"
+  }
+}
